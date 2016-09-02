@@ -62,6 +62,7 @@ void verify_input (int i, char *arguments[], Param_t *params) {
 
 void verify_redirects (Param_t * params) {
   if (params->inputRedirect != NULL) {
+    params->argumentCount -= 1;
     if (strstr (params->inputRedirect, "<") != NULL || strstr (params->inputRedirect, ">") != NULL){
       printf ("Error : Improper formatting of file sources.\n");
       params->argumentCount = -1;
@@ -69,6 +70,7 @@ void verify_redirects (Param_t * params) {
     }
   }
   if (params->outputRedirect != NULL) {
+    params->argumentCount -= 1;
     if (strstr (params->outputRedirect, ">") != NULL || strstr (params->outputRedirect, "<")){
       printf ("Error : Improper formatting of file sources.\n");
       params->argumentCount = -1;
