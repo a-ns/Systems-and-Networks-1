@@ -17,7 +17,10 @@ struct PARAM parse_input (char *buffer) {
   params.inputRedirect = params.outputRedirect = NULL; // not guaranteed to be initialized to NULL. For clean output when printing on failure.
   char *arguments[MAXARGS];
   int i;
-  for(i = 0; i < MAXARGS; i++) arguments[i] = NULL;
+  for(i = 0; i < MAXARGS; i++){
+    params.argumentVector[i] = NULL;
+    arguments[i] = NULL;
+ }
   char *current_token = strtok (buffer, " ");
   i = 0;
   while (current_token != NULL) {

@@ -10,7 +10,7 @@
 
 
 #define MAXARGS 32 /* Professor supplised #define to use */
-#define BIGNUM 500 /* For big arrays */
+#define BIGNUM 50 /* For big arrays */
 /**
 * Professor supplied structure to adhere to.
 */

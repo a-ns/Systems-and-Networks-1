@@ -1,2 +1,2 @@
 myshell: myshell.c parse.c parse.h
-	gcc -Wall myshell.c parse.c -o myshell
+	gcc myshell.c parse.c -o myshell
