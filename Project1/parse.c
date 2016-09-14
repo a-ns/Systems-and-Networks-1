@@ -60,6 +60,7 @@ void verify_input (int i, char *arguments[], Param_t *params) {
   }
   //check input/output Redirects for bad characters
   verify_redirects(params);
+  for (i = params->argumentCount; i < MAXARGS; i++) params->argumentVector[i] = NULL;
   return;
 }
 

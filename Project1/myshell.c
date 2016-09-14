@@ -18,6 +18,7 @@
 void printParams (Param_t *);
 int is_debug(int , char *[]);
 void run_command( Param_t);
+
 int main (int argc, char *argv[]) {
   int debug = is_debug(argc, argv);
   while(1) {
@@ -26,11 +27,13 @@ int main (int argc, char *argv[]) {
     fgets (buffer, BIGNUM, stdin);
 
     buffer[strlen(buffer) - 1] = '\0';
-    if (debug) printf ("The buffer is \"%s\"\n\n", buffer);
+    if (debug)
+      printf ("The buffer is \"%s\"\n\n", buffer);
     if ( strcmp (buffer, "exit") == 0)
       return 0;
 
     Param_t params = parse_input (buffer);
+
     if (debug){
       printParams(&params);
     }
@@ -98,6 +101,10 @@ void run_command (Param_t params) {
     */
   wpid = fork();
   if (wpid == 0) { //child
+    if (params.outputRedirect != NULL)
+      freopen (params.outputRedirect, "a", stdout);
+    if (params.inputRedirect != NULL)
+      freopen (params.inputRedirect, "a", stdin);
     execvp (params.argumentVector[0], params.argumentVector);
     printf ("Program \"%s\" not found.\n", params.argumentVector[0]);
     exit(0);
