@@ -14,9 +14,23 @@
 #include <string.h>
 #include "parse.h"
 
-
+/**
+* Professor supplied printer for a struct PARAMS.
+* @Param Param_t *
+*/
 void printParams (Param_t *);
+
+/**
+* Program will enter debug mode if user enabled -Debug flag
+* @Param int, char *[] (argc and argv read in from command line)
+* Return-Type: int (standard C, zero is false, nonzero is true)
+*/
 int is_debug(int , char *[]);
+
+/**
+* This executes the commands read in by the parser
+* @Param Param_t struct
+*/
 void run_command( Param_t);
 
 int main (int argc, char *argv[]) {
@@ -29,34 +43,24 @@ int main (int argc, char *argv[]) {
     buffer[strlen(buffer) - 1] = '\0';
     if (debug)
       printf ("The buffer is \"%s\"\n\n", buffer);
+
     if ( strcmp (buffer, "exit") == 0)
       return 0;
 
     Param_t params = parse_input (buffer);
 
-    if (debug){
+    if (debug)
       printParams(&params);
-    }
-    run_command(params);
 
+    run_command(params);
   }
   return 0;
 }
 
-/**
-* Program will enter debug mode if user enabled -Debug flag
-* Return-Type: int (1 == TRUE, 0 == FALSE)
-*/
 int is_debug(int argc, char*argv[]){
   return (argc > 1 && strcmp (argv[1], "-Debug") == 0);
 }
 
-/**
-* Professor supplied printer for a struct PARAMS.
-* Function requires a struct PARAMS pointer, so
-*    use printParams(&params_struct) when calling if working with structs.
-*
-*/
 void printParams (Param_t *param) {
   int i;
   printf ("InputRedirect: [%s]\n",
@@ -72,46 +76,44 @@ void printParams (Param_t *param) {
 void run_command (Param_t params) {
   if (params.argumentCount < 1)
     return;
-  int i;
-  int status = 0;
-  int n = 5; // this is read in as a paramter from shell
+  int i,
+      status = 0,
+      n = 1,
+      total;
   pid_t children[n], wpid;
-  /*for (i = 0; i < n; ++i){
-    children[i] = fork();
-    if (children[i] == -1){
-      exit(-1);
+  if (strstr(params.argumentVector[0], "testme") != NULL || strstr(params.argumentVector[0], "prime") != NULL) {
+    n = atoi (params.argumentVector[1]);
+    total = atoi (params.argumentVector[2]);
+    if (n == 0 || total == 0) {
+      printf("Incorrect input. Expected integer.\n");
+      return;
     }
-    else if (children[i] == 0) {
-      //child
-      //call the exec function here i guess
-
-      if (params.outputRedirect != NULL)
-        freopen (params.outputRedirect, "a", stdout);
-      if (params.inputRedirect != NULL)
-        freopen (params.inputRedirect, "a", stdin);
-      if (execvp(params.argumentVector[0], &(params.argumentVector[1])) == -1)
-        printf("exec fail\n");
+  }
+  for (i = 0; i < n; ++i){
+      children[i] = fork();
+      if (children[i] == -1) {
+        exit(-1);
+      }
+      else if (children[i] == 0) { //child
+        if (strstr(params.argumentVector[0], "testme") != NULL || strstr(params.argumentVector[0], "prime") != NULL) {
+            params.argumentVector[1] = malloc(sizeof(char)*BIGNUM);
+            params.argumentVector[2] = malloc(sizeof(char)*BIGNUM);
+            params.argumentVector[3] = malloc(sizeof(char)*BIGNUM);
+            //these calls to malloc do not need a corresponding free statement, exec will overwrite and memory will be "freed" or process will exit, freeing memory
+            sprintf(params.argumentVector[1], "%i", n);
+            sprintf(params.argumentVector[2], "%i", i);
+            sprintf(params.argumentVector[3], "%i", total);
+            params.argumentVector[4] = NULL;
+        }
+        if (params.outputRedirect != NULL)
+          freopen (params.outputRedirect, "a", stdout);
+        if (params.inputRedirect != NULL)
+          freopen (params.inputRedirect, "r", stdin);
+        execvp(params.argumentVector[0], params.argumentVector);
+        printf ("myshell: command not found: %s\n", params.argumentVector[0]);
         exit(0);
-    }
+      }
   }
-
-    //parent, waits for all other process to finish
-    printf ("Parent process : %i\n", getpid());
-    while((wpid = wait(&status)) > 0);
-    */
-  wpid = fork();
-  if (wpid == 0) { //child
-    if (params.outputRedirect != NULL)
-      freopen (params.outputRedirect, "a", stdout);
-    if (params.inputRedirect != NULL)
-      freopen (params.inputRedirect, "a", stdin);
-    execvp (params.argumentVector[0], params.argumentVector);
-    printf ("Program \"%s\" not found.\n", params.argumentVector[0]);
-    exit(0);
-  }
-  else {
-    //parent
-    while((wpid = wait(&status)) > 0);
-  }
+  while((wpid = wait(&status)) > 0); //wait for children to finish before accepting new command
   return;
 }

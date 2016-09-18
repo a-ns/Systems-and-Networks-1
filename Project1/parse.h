@@ -10,7 +10,7 @@
 
 
 #define MAXARGS 32 /* Professor supplised #define to use */
-#define BIGNUM 50 /* For big arrays */
+#define BIGNUM 500 /* For big arrays */
 /**
 * Professor supplied structure to adhere to.
 */
@@ -38,6 +38,6 @@ void verify_input (int, char *[], struct PARAM *);
 
 void verify_redirects (Param_t *);
 
-int check_special_chars (int , int *, int *, char *[], Param_t *); 
+int check_special_chars (int , int *, int *, char *[], Param_t *);
 
 #endif
