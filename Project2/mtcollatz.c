@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
+#include <stdint.h>
 #define BIGNUM 1000 //on collatz wiki, for 100 million numbers, there was
 		   //hardly anything that went over 550, and i doubt we'll
 		   //be running 100 million numbers with out program
 #define MAX 1000000
+#define BILLION 1000000000L
 void join_threads(pthread_t *, int);
 void spawn_threads(pthread_t *, int);
 void initialize(int *, int, char *[]);
@@ -16,25 +18,30 @@ void generate_csv();
 int HISTOGRAM[BIGNUM];
 int COUNTER = 2;
 int COLLATZ_UPPER;
-int largest_index = 0;
-int memoization[MAX];
 
 int main(int argc, char *argv[]){
 	int thread_count;
-	clock_t start = clock();	   
+	struct timespec start;
+	clock_gettime(CLOCK_REALTIME, &start);	
 	initialize(&thread_count, argc, argv);		
 	pthread_t threads[thread_count];
 	spawn_threads(threads, thread_count);
 	
-	generate_csv();
+
 	
 	//join threads
 	join_threads(threads, thread_count);
-	
-	
-	clock_t end = clock() - start;
-	fprintf(stderr, "%i,%i,%f\n", COLLATZ_UPPER, thread_count, (double) end/ CLOCKS_PER_SEC);
-	return 0;
+	generate_csv();
+	struct timespec end;
+	clock_gettime(CLOCK_REALTIME, &end);
+	double real_time = (end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)BILLION;
+	fprintf(stderr, "%i,%i,%lf\n",COLLATZ_UPPER, thread_count, real_time); 
+/*	int sum = 0;
+	int i;
+	for (i = 0; i < BIGNUM; i++)
+		sum += HISTOGRAM[i];
+	fprintf(stderr, "%i\n", sum);
+*/	return 0;
 }
 
 void spawn_threads(pthread_t *threads, int thread_count){
@@ -67,9 +74,6 @@ void *collatz(void *param){
 		int counter = COUNTER;
 		COUNTER++;
 		int stopping_time = compute_stopping_time((unsigned int) counter);
-		if (counter < MAX) memoization[counter] = stopping_time;
-		if (stopping_time > largest_index)
-			largest_index = stopping_time;
 		HISTOGRAM[stopping_time]++;
 	}
 	pthread_exit(NULL);
@@ -77,15 +81,12 @@ void *collatz(void *param){
 }
 
 int compute_stopping_time(unsigned int num){
-	if (num < MAX && memoization[num] != -1)
-		return memoization[num];
 	int ans = 0;
+	if (num == 1) return 1;
 	if (num % 2 == 0)
 		ans = 1 + compute_stopping_time (num/2);
 	else
 		ans = 1 + compute_stopping_time ((3*num)+1);
-	if (num < MAX)
-		memoization[num] = ans;
 	return ans;	
 }
 
@@ -104,9 +105,5 @@ void initialize(int * thread_count, int argc, char *argv[]){
 	for (i = 0; i < BIGNUM; ++i){
 		HISTOGRAM[i] = 0;
 	}
-	for (i = 0; i < MAX; ++i){
-		memoization[i] = -1;
-	}
-	memoization[2] = 1;
 	return;	
 }
