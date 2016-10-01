@@ -58,9 +58,10 @@ int main(int argc, char *argv[]){
 	pthread_t threads[thread_count];
 	spawn_threads(threads, thread_count);
 	join_threads(threads, thread_count);
-	generate_csv();
+
 	struct timespec end;
 	clock_gettime(CLOCK_REALTIME, &end);
+	generate_csv();
 	double real_time = (end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)BILLION;
 	fprintf(stderr, "%i,%i,%lf\n",COLLATZ_UPPER, thread_count, real_time); 
 	return 0;
