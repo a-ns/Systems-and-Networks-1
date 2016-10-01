@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
-#include <stdint.h>
 #define BIGNUM 1000 //on collatz wiki, for 100 million numbers, there was
 		   //hardly anything that went over 550, and i doubt we'll
 		   //be running 100 million numbers with out program
@@ -19,6 +18,8 @@ int HISTOGRAM[BIGNUM];
 int COUNTER = 2;
 int COLLATZ_UPPER;
 
+
+
 int main(int argc, char *argv[]){
 	int thread_count;
 	struct timespec start;
@@ -26,22 +27,13 @@ int main(int argc, char *argv[]){
 	initialize(&thread_count, argc, argv);		
 	pthread_t threads[thread_count];
 	spawn_threads(threads, thread_count);
-	
-
-	
-	//join threads
 	join_threads(threads, thread_count);
 	generate_csv();
 	struct timespec end;
 	clock_gettime(CLOCK_REALTIME, &end);
 	double real_time = (end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)BILLION;
 	fprintf(stderr, "%i,%i,%lf\n",COLLATZ_UPPER, thread_count, real_time); 
-/*	int sum = 0;
-	int i;
-	for (i = 0; i < BIGNUM; i++)
-		sum += HISTOGRAM[i];
-	fprintf(stderr, "%i\n", sum);
-*/	return 0;
+	return 0;
 }
 
 void spawn_threads(pthread_t *threads, int thread_count){
@@ -95,7 +87,7 @@ void initialize(int * thread_count, int argc, char *argv[]){
 		fprintf(stderr, "Improper amount of arguments. Exiting.\n");
 		exit(0);
 	}
-	COLLATZ_UPPER = atoi(argv[1]);
+	COLLATZ_UPPER =atoi(argv[1]);
 	*thread_count = atoi(argv[2]);
 	if (COLLATZ_UPPER == 0 || *thread_count == 0){
 		fprintf(stderr, "Error on arguments. Exiting.\n");
