@@ -1,17 +1,47 @@
+/* A Simple multithreaded program that computes collatz stopping times.
+ * The user enters an upper bound and then the number of threads to run.
+ * @info COP 4634
+ * @author Alex Lindemann, Nathaniel Moore
+ * @date 10/2/2016
+ */
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
-#include <time.h>
+#include <pthread.h> //for threading
+#include <time.h>   // for clock
 #define BIGNUM 1000 //on collatz wiki, for 100 million numbers, there was
-		   //hardly anything that went over 550, and i doubt we'll
-		   //be running 100 million numbers with out program
-#define MAX 1000000
+		    //hardly anything that went over 550, and i doubt we'll
+		    //be running 100 million numbers with our program
 #define BILLION 1000000000L
+/* Joins N number of threads specified by user.
+ * @Param pthread_t *: array of pthreads, int: number of threads to join
+ */
 void join_threads(pthread_t *, int);
+
+/* Spawns N number of threads specified by user.
+ * @Param pthread_t *: array of pthreads, int: number of threads to make
+ */
 void spawn_threads(pthread_t *, int);
+
+/* Initializes setup data.
+ * @Param int *: thread count, int: argc, char **: argv
+ */
 void initialize(int *, int, char *[]);
+
+/* Thread function. Calls compute stopping time
+ * @Param void *: to make compiler happy
+ */
 void * collatz(void *);
+
+/* Computes the stopping time for the passed in number.
+ * @Param unsigned int: since we're only working with positive numbers,
+ * we don't need the negative spectrum of int type. unsigned ints also allow
+ * for when stopping time input becomes huge.
+ */
 int compute_stopping_time(unsigned int);
+
+/* Prints the histogram to stdout in comma separated values. Each histogram
+ * entry is on a new line
+ */
 void generate_csv();
 
 int HISTOGRAM[BIGNUM];
