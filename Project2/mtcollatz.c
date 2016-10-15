@@ -43,11 +43,15 @@ int compute_stopping_time(unsigned int);
  * entry is on a new line
  */
 void generate_csv();
-
+#define MAX 1000000
 int HISTOGRAM[BIGNUM];
 int COUNTER = 2;
 int COLLATZ_UPPER;
-
+int MEMO[MAX];
+pthread_mutex_t count_mutex;
+pthread_mutexattr_t count_mtr;
+pthread_mutexattr_t memo_mtr;
+pthread_mutex_t memo_mutex;
 
 
 int main(int argc, char *argv[]){
@@ -58,12 +62,18 @@ int main(int argc, char *argv[]){
 	pthread_t threads[thread_count];
 	spawn_threads(threads, thread_count);
 	join_threads(threads, thread_count);
-
+	
 	struct timespec end;
 	clock_gettime(CLOCK_REALTIME, &end);
 	generate_csv();
 	double real_time = (end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec)/(double)BILLION;
 	fprintf(stderr, "%i,%i,%lf\n",COLLATZ_UPPER, thread_count, real_time); 
+	int i;
+	int sum = 0;
+	for (i = 0; i < BIGNUM; i++){
+		sum += HISTOGRAM[i];
+	}
+	fprintf(stderr, "%i\n", sum);
 	return 0;
 }
 
@@ -94,22 +104,33 @@ void join_threads(pthread_t *threads, int thread_count){
 }
 void *collatz(void *param){
 	while(COUNTER < COLLATZ_UPPER){
+		pthread_mutex_lock(&count_mutex);
 		int counter = COUNTER;
 		COUNTER++;
+		pthread_mutex_unlock(&count_mutex);
 		int stopping_time = compute_stopping_time((unsigned int) counter);
+		pthread_mutex_lock(&memo_mutex);
 		HISTOGRAM[stopping_time]++;
+		pthread_mutex_unlock(&memo_mutex);
 	}
 	pthread_exit(NULL);
 	return NULL; 
 }
 
 int compute_stopping_time(unsigned int num){
+	if (num < MAX && MEMO[num] != -1)
+		return MEMO[num];
 	int ans = 0;
 	if (num == 1) return 1;
 	if (num % 2 == 0)
 		ans = 1 + compute_stopping_time (num/2);
 	else
 		ans = 1 + compute_stopping_time ((3*num)+1);
+	if (num < MAX){
+		pthread_mutex_lock(&memo_mutex);
+		MEMO[num] = ans;
+		pthread_mutex_unlock(&memo_mutex);
+	}
 	return ans;	
 }
 
@@ -128,5 +149,13 @@ void initialize(int * thread_count, int argc, char *argv[]){
 	for (i = 0; i < BIGNUM; ++i){
 		HISTOGRAM[i] = 0;
 	}
+	for (i = 0; i < MAX; i++){
+		MEMO[i] = -1;
+	}
+	pthread_mutexattr_init(&count_mtr);
+	pthread_mutexattr_init(&memo_mtr);
+	pthread_mutex_init(&count_mutex, &count_mtr);
+	pthread_mutex_init(&memo_mutex, &memo_mtr);
+	MEMO[2] = 1;
 	return;	
 }
