@@ -47,17 +47,17 @@ void * catThread( void * param );
  *   * be simulated.  
  *    * Try 30 for development and 120 for more thorough testing.
  *     */
-#define WORLDEND             30
+#define WORLDEND            120 
 
 /*
  *  * Number of lizard threads to create
  *   */
-#define NUM_LIZARDS          20
+#define NUM_LIZARDS        20 
 
 /*
  *  * Number of cat threads to create
  *   */
-#define NUM_CATS             2
+#define NUM_CATS             20
 
 /*	
  *	 * Maximum lizards crossing at once before alerting cats
@@ -72,7 +72,7 @@ void * catThread( void * param );
 /*
  *  * Maximum seconds for a cat to sleep
  *   */
-#define MAX_CAT_SLEEP        3
+#define MAX_CAT_SLEEP       3 
 
 /*
  *  * Maximum seconds for a lizard to eat
@@ -88,7 +88,13 @@ void * catThread( void * param );
 /*
  *  * Declare global variables here
  *   */
-
+sem_t driveway;//AL NM
+pthread_mutex_t lizard_id_mutex;
+pthread_mutexattr_t lizard_id_mutex_attr;
+pthread_mutex_t monkey2Sago_lock;
+pthread_mutex_t sago2Monkey_lock;
+pthread_mutexattr_t monkey_attr;
+pthread_mutexattr_t sago_attr;
 /**************************************************/
 /* Please leave these variables alone.  They are  */
 /* used to check the proper functioning of your   */
@@ -116,97 +122,113 @@ int running;
  *        */
 int main(int argc, char **argv)
 {
-  /*
- *    * Declare local variables
- *       */
-pthread_t lizard_threads[NUM_LIZARDS];
-pthread_t cat_threads[NUM_CATS];
+	  /*
+	 *    * Declare local variables
+	 *       */
+	pthread_t lizard_threads[NUM_LIZARDS];//AL NM
+	pthread_t cat_threads[NUM_CATS];//AL NM
 
 
-  /*
- *    * Check for the debugging flag (-d)
- *       */
-  debug = 0;
-  if (argc > 1)
-    if (strncmp(argv[1], "-d", 2) == 0)
-      debug = 1;
+	  /*
+	 *    * Check for the debugging flag (-d)
+	 *       */
+	debug = 0;
+	if (argc > 1)
+	  if (strncmp(argv[1], "-d", 2) == 0)
+	    debug = 1;
 
 
-  /*
- *    * Initialize variables
- *       */
-  numCrossingSago2MonkeyGrass = 0;
-  numCrossingMonkeyGrass2Sago = 0;
-  running = 1;
+	  /*
+	 *    * Initialize variables
+	 *       */
+	numCrossingSago2MonkeyGrass = 0;
+	numCrossingMonkeyGrass2Sago = 0;
+	running = 1;
 
 
-  /*
- *    * Initialize random number generator
- *       */
-  srandom( (unsigned int)time(NULL) );
+	  /*
+	 *    * Initialize random number generator
+	 *       */
+	srandom( (unsigned int)time(NULL) );
 
 
-  /*
- *    * Initialize locks and/or semaphores
- *       */
-sem_t driveway;
-sem_init(&driveway, 0, MAX_LIZARD_CROSSING);
+	  /*
+	 *    * Initialize locks and/or semaphores
+	 *       */
+
+	sem_init(&driveway, 0, MAX_LIZARD_CROSSING);//AL NM
+
+	pthread_mutexattr_init(&lizard_id_mutex_attr);
+	pthread_mutex_init(&lizard_id_mutex, &lizard_id_mutex_attr);
+	pthread_mutexattr_init(&monkey_attr);
+	pthread_mutexattr_init(&sago_attr);
+	pthread_mutex_init(&monkey2Sago_lock, &monkey_attr);
+	pthread_mutex_init(&sago2Monkey_lock, &sago_attr);
 
 
+	  /*
+	 *    * Create NUM_LIZARDS lizard threads
+	 *       */
+	int i;
+	for(i = 0; i < NUM_LIZARDS; i++){
+		pthread_mutex_lock(&lizard_id_mutex);
+		int lizard_id = i;
+		pthread_create(&lizard_threads[i], NULL, lizardThread , (void *)&lizard_id);
+		//mutex unlocks in lizardThread
+	}
 
-  /*
- *    * Create NUM_LIZARDS lizard threads
- *       */
-int i;
-for(i = 0; i < NUM_LIZARDS; i++){
-	pthread_create(&lizard_threads[i], NULL, lizardThread , (void *)&i);
-}
-
-  /*
- *    * Create NUM_CATS cat threads
- *       */
-for(i = 0; i < NUM_CATS; i++){
-	pthread_create(&cat_threads[i], NULL, catThread, (void *)&i);
-}
-
-
-
-  /*
- *    * Now let the world run for a while
- *       */
-  sleep( WORLDEND );
-
-
-  /*
- *    * That's it - the end of the world
- *       */
-  running = 0;
-
-
-  /*
- *    * Wait until all threads terminate
- *       */
-for(i =0; i < NUM_LIZARDS; i++){
-	pthread_join(lizard_threads[i], NULL);
-}
-for(i = 0; i < NUM_CATS; i++){
-	pthread_join(cat_threads[i], NULL);
-}
+	  /*
+	 *    * Create NUM_CATS cat threads
+	 *       */
+	for(i = 0; i < NUM_CATS; i++){
+		pthread_mutex_lock(&lizard_id_mutex);
+		int cat_id = i;
+		pthread_create(&cat_threads[i], NULL, catThread, (void *)&cat_id);
+		//mutex unlocks in catThread
+	}
 
 
 
+	  /*
+	 *    * Now let the world run for a while
+	 *       */
+	  sleep( WORLDEND );
 
 
-   /*
- *     * Delete the locks and semaphores
- *         */
-sem_destroy(&driveway);
+	  /*
+	 *    * That's it - the end of the world
+	 *       */
+	  running = 0;
 
 
-  /*
- *    * Exit happily
- *       */
-  return 0;
+	  /*
+	 *    * Wait until all threads terminate
+	 *       */
+	for(i =0; i < NUM_LIZARDS; i++){
+		pthread_join(lizard_threads[i], NULL);//AL NM
+	}
+	for(i = 0; i < NUM_CATS; i++){
+		pthread_join(cat_threads[i], NULL);//AL NM
+	}
+
+
+
+
+
+	   /*
+	 *     * Delete the locks and semaphores
+	 *         */
+	
+	sem_destroy(&driveway);//AL NM
+	pthread_mutex_destroy(&lizard_id_mutex);
+	pthread_mutex_destroy(&monkey2Sago_lock);
+	pthread_mutex_destroy(&sago2Monkey_lock);
+	
+	  /*
+	 *    * Exit happily
+	 *       */
+	printf("Everything is all right.\n");
+	return 0;
 }
 
 
@@ -240,44 +262,38 @@ void made_it_2_sago(int num);
  *          */
 void * lizardThread( void * param )
 {
-  int num = *(int*)param;
+	int num = *(int*)param;
+	pthread_mutex_unlock(&lizard_id_mutex);
+	if (debug)
+	{
+	    printf("[%2d] lizard is alive\n", num);
+	    fflush(stdout);
+	}
 
-  if (debug)
-    {
-      printf("[%2d] lizard is alive\n", num);
-      fflush(stdout);
-    }
+	while(running) 
+	{
+	      /* 
+	 *        * Follow the algorithm given in the assignment
+	 *               * using calls to the functions declared above.
+	 *                      * You'll need to complete the implementation of
+	 *                             * some functions by filling in the code.  Some  
+	 *                                    * are already completed - see the comments.
+	 *                                           */
+		lizard_sleep(num); //AL NM
+		sago_2_monkeyGrass_is_safe(num); //AL NM
+		cross_sago_2_monkeyGrass(num);	//AL NM
+		
+		made_it_2_monkeyGrass(num);//AL NM
+		lizard_eat(num);//AL NM
 
-  while(running)
-    {
-      /* 
- *        * Follow the algorithm given in the assignment
- *               * using calls to the functions declared above.
- *                      * You'll need to complete the implementation of
- *                             * some functions by filling in the code.  Some  
- *                                    * are already completed - see the comments.
- *                                           */
-
-
-
-
-
-
-
-
-
-
-
-
+		monkeyGrass_2_sago_is_safe(num);//AL NM
+		cross_monkeyGrass_2_sago(num);//AL NM
+		made_it_2_sago(num);//AL NM
 
 
-
-
-
-
-    }
-
-  pthread_exit(NULL);
+	    }
+	printf("[%2d] lizard thread exiting.\n", num);	
+	pthread_exit(NULL);
 }
 
 /*
@@ -292,31 +308,36 @@ void * lizardThread( void * param )
  *          */
 void * catThread( void * param )
 {
-  int num = *(int*)param;
+	int num = *(int*)param;
+	pthread_mutex_unlock(&lizard_id_mutex);//AL NM
+	if (debug)
+	{
+		printf("[%2d] cat is alive\n", num);
+		fflush(stdout); 
+	}
 
-  if (debug)
-    {
-      printf("[%2d] cat is alive\n", num);
-      fflush(stdout);
-    }
-
-  while(running)
-    {
-	  cat_sleep(num);
+	while(running)
+	{
+		cat_sleep(num);
 
 
 
-	  /*
- * 	   * Check for too many lizards crossing
- * 	   	   */
-	  if (numCrossingSago2MonkeyGrass + numCrossingMonkeyGrass2Sago > MAX_LIZARD_CROSSING)
-	    {
-		  printf( "\tThe cats are happy - they have toys.\n" );
-		  exit( -1 );
-	    }
-    }
+		  /*
+		   * 	   * Check for too many lizards crossing
+		   * 	   	   */
+		pthread_mutex_lock(&sago2Monkey_lock); // do we need this
+		pthread_mutex_lock(&monkey2Sago_lock); // do we need this
+		if (numCrossingSago2MonkeyGrass + numCrossingMonkeyGrass2Sago > MAX_LIZARD_CROSSING)
+		{
+			printf( "\tThe cats are happy - they have toys.\n" );
+			exit( -1 );
+		}
+		printf("********Total Lizards : %i********************************\n", numCrossingSago2MonkeyGrass + numCrossingMonkeyGrass2Sago);
+		pthread_mutex_unlock(&sago2Monkey_lock);
+		pthread_mutex_unlock(&monkey2Sago_lock);
+	}
 
-  pthread_exit(NULL);
+	pthread_exit(NULL);
 }
 
 
@@ -398,7 +419,7 @@ void sago_2_monkeyGrass_is_safe(int num)
     }
 
 	
-
+  sem_wait(&driveway); //AL NM
 
   if (debug)
     {
@@ -428,7 +449,9 @@ void cross_sago_2_monkeyGrass(int num)
   /*
  *    * One more crossing this way
  *       */
+  pthread_mutex_lock(&sago2Monkey_lock);
   numCrossingSago2MonkeyGrass++;
+  pthread_mutex_unlock(&sago2Monkey_lock);
 
   /*
  *    * Check for lizards cross both ways
@@ -450,7 +473,9 @@ void cross_sago_2_monkeyGrass(int num)
   /*
  *    * That one seems to have made it
  *       */
+  pthread_mutex_lock(&sago2Monkey_lock);
   numCrossingSago2MonkeyGrass--;
+  pthread_mutex_unlock(&sago2Monkey_lock);
 }
 
 
@@ -472,8 +497,7 @@ void made_it_2_monkeyGrass(int num)
       printf( "[%2d] made the  sago -> monkey grass  crossing\n", num );
       fflush( stdout );
     }
-
-
+  sem_post(&driveway); //AL NM
 
 
 
@@ -532,7 +556,7 @@ void monkeyGrass_2_sago_is_safe(int num)
     }
 
 
-
+  sem_wait(&driveway); //AL NM
 
 
   if (debug)
@@ -561,10 +585,13 @@ void cross_monkeyGrass_2_sago(int num)
       fflush( stdout );
     }
 
+
   /*
  *    * One more crossing this way
  *       */
+  pthread_mutex_lock(&monkey2Sago_lock); // do we need this???
   numCrossingMonkeyGrass2Sago++;
+  pthread_mutex_unlock(&monkey2Sago_lock); // do we need this ???
 
   
   /*
@@ -586,7 +613,10 @@ void cross_monkeyGrass_2_sago(int num)
   /*
  *    * That one seems to have made it
  *       */
+  pthread_mutex_lock(&monkey2Sago_lock); // do we need this
   numCrossingMonkeyGrass2Sago--;
+  pthread_mutex_unlock(&monkey2Sago_lock); // do we need this
+
 }
 
 
@@ -609,7 +639,7 @@ void made_it_2_sago(int num)
       fflush( stdout );
     }
 
-
+  sem_post(&driveway); //AL NM
 
 
 
