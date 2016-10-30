@@ -1,5 +1,5 @@
-lizard.out: lizard2016.c
-	gcc -o lizard.out lizard2016.c -lpthread
+lizard: lizards.c
+	gcc -o lizard lizards.c -lpthread -g -Wall 
 
 clean: 
-	rm lizard.out
+	rm lizard
