@@ -17,8 +17,7 @@ void printMatrixRow();
 void printMatrixCol();
 void writeMatrixRow();
 void writeMatrixCol();
-typedef void (*PrintPtr)();
-typedef void (*WritePtr)();
+typedef void (*MatrixFuncPtr)();
 int main (int argc, char*argv[]){
 
 	printf("%i\n",(int) sizeof(MATRIX));
@@ -36,8 +35,7 @@ int main (int argc, char*argv[]){
 
 void doExperiments (struct timespec *start, struct timespec *end) {
 	
-	PrintPtr print_fptr[2] = {&printMatrixRow, &printMatrixCol};
-	WritePtr write_fptr[2] = {&writeMatrixRow, &writeMatrixCol};
+	MatrixFuncPtr fptr[4] = {&writeMatrixRow, &writeMatrixCol, &printMatrixRow, &printMatrixCol};
 
 	int i;
 	int k;
@@ -45,13 +43,7 @@ void doExperiments (struct timespec *start, struct timespec *end) {
 		clock_gettime(CLOCK_REALTIME, &start[i]);
 
 		for (k = 0; k < 10; k++) {
-			
-			if (i < 2) { //do write_fptr 
-				write_fptr[i](i, 0);
-			}
-			else { //do read_fptr
-				print_fptr[i - 2]();
-			}
+			fptr[i]();	
 		}
 		clock_gettime(CLOCK_REALTIME, &end[i]);
 	}
