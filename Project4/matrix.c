@@ -8,7 +8,7 @@
 
 char MATRIX[ROW][COL];
 
-void doExperiments(struct timespec *, struct timespec *);
+void doExperiments();
 void write_one_row (int, int);
 void write_one_col (int, int);
 void print_row (int);
@@ -20,32 +20,26 @@ void writeMatrixCol();
 typedef void (*MatrixFuncPtr)();
 int main (int argc, char*argv[]){
 
-	printf("%i\n",(int) sizeof(MATRIX));
-	struct timespec start[4];
-	struct timespec end[4];
-
-	doExperiments(start, end);
+	doExperiments();
 	
-	int i;
-	for (i = 0; i < 4; i++) {
-		fprintf(stderr, "%lf\n", end[i].tv_sec - start[i].tv_sec + (double)(end[i].tv_nsec - start[i].tv_nsec)/(double)BILLION);
-	}
 	return 0;
 }
 
-void doExperiments (struct timespec *start, struct timespec *end) {
-	
+void doExperiments () {
+	struct timespec start[4];
+	struct timespec end[4];
 	MatrixFuncPtr fptr[4] = {&writeMatrixRow, &writeMatrixCol, &printMatrixRow, &printMatrixCol};
 
 	int i;
 	int k;
 	for (i = 0; i < 4; i++){
 		clock_gettime(CLOCK_REALTIME, &start[i]);
-
 		for (k = 0; k < 10; k++) {
 			fptr[i]();	
 		}
 		clock_gettime(CLOCK_REALTIME, &end[i]);
+		fprintf(stderr, "%lf\n", end[i].tv_sec - start[i].tv_sec + (double)(end[i].tv_nsec - start[i].tv_nsec)/(double)BILLION);
+	
 	}
 }
 
