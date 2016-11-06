@@ -1,28 +1,71 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #define ROW 20480
 #define COL 4096
+#define BILLION 1000000000L
 
 char MATRIX[ROW][COL];
 
+void doExperiments(struct timespec *, struct timespec *);
 void write_one_row (int, int);
 void write_one_col (int, int);
-char * read_one_row (int);
-char * read_one_col (int);
 void print_row (int);
 void print_col (int);
-
+void printMatrixRow();
+void printMatrixCol();
+void writeMatrixRow();
+void writeMatrixCol();
+typedef void (*PrintPtr)();
+typedef void (*WritePtr)();
 int main (int argc, char*argv[]){
 
 	printf("%i\n",(int) sizeof(MATRIX));
-	write_one_row(0, 5);
-	write_one_col(0, 4);
-	print_row(0); //DO NOT ACTUALLY USE IN SUBMISSION BECUASE IO, use read_one instead
-	print_col(0); //DO NOT ACTUALLY USE IN SUBMISSION BECAUSE IO, use read_one instead 
+	struct timespec start[4];
+	struct timespec end[4];
+
+	doExperiments(start, end);
 	
+	int i;
+	for (i = 0; i < 4; i++) {
+		fprintf(stderr, "%lf\n", end[i].tv_sec - start[i].tv_sec + (double)(end[i].tv_nsec - start[i].tv_nsec)/(double)BILLION);
+	}
 	return 0;
 }
+
+void doExperiments (struct timespec *start, struct timespec *end) {
+	
+	PrintPtr print_fptr[2] = {&printMatrixRow, &printMatrixCol};
+	WritePtr write_fptr[2] = {&writeMatrixRow, &writeMatrixCol};
+
+	int i;
+	int k;
+	for (i = 0; i < 4; i++){
+		clock_gettime(CLOCK_REALTIME, &start[i]);
+
+		for (k = 0; k < 10; k++) {
+			
+			if (i < 2) { //do write_fptr 
+				write_fptr[i](i, 0);
+			}
+			else { //do read_fptr
+				print_fptr[i - 2]();
+			}
+		}
+		clock_gettime(CLOCK_REALTIME, &end[i]);
+	}
+}
+
+/* This will "print" the matrix row by row, calling print_row with the desired row to "print"
+ *
+ */
+void printMatrixRow () {
+	int i;
+	for (i = 0; i < ROW; i++)
+		print_row (i);
+}
+
 /* This will perform IO and actually print the desired row to screen. 
  * It will first call read_one_row and create a copy of the global MATRIX's row,
  * print out the copy, and then free the copy.
@@ -30,13 +73,23 @@ int main (int argc, char*argv[]){
  *@param row - the desired row to be printed
  */
 void print_row (int row){
-	char * readr = read_one_row(row);
 	int i;
+	int doSomething;
 	for (i = 0; i < COL; i++){
-		printf("%i\n",(int) readr[i]);
+	//	printf("%i\n",(int) readr[i]);
+		doSomething = MATRIX[row][i] += 1;
 	}
-	free(readr); //free what we malloc
+	doSomething++;
 	return;
+}
+
+
+/*	This will "print" the matrix col by col, calling print_col with the desired col to "print"
+ */
+void printMatrixCol () {
+	int i;
+	for (i = 0; i < COL; i++)
+		print_col (i);
 }
 
 /* This will perform IO and actually print the desired col to screen.
@@ -47,14 +100,26 @@ void print_row (int row){
  *@param col - the desired col to be printed
  */
 void print_col (int col){
-	char * readc = read_one_col(col);
 	int i;
+	int doSomething;
 	for (i = 0; i < ROW; i++){
-		printf("%i\n", (int) readc[i]);
+	//	printf("%i\n", (int) readc[i]);
+		doSomething = MATRIX[i][col] += 1;
 	}
-	free(readc); //free what we malloc
+	doSomething++;
 	return;
 }
+
+
+/* This will write the matrix row by row, calling write_one_row
+ *
+ */
+void writeMatrixRow (){
+	int i;
+	for (i = 0; i < ROW; i++)
+		write_one_row (i, 0);
+}
+
 
 /* This will write values starting from num to the row specified in the global MATRIX.
  * num will increment each iteration to avoid compiler optimizations.
@@ -69,6 +134,16 @@ void write_one_row (int row, int num){
 	return;
 }
 
+
+/* This will write the matrix col by col, calling write_one_col
+ *
+ */
+void writeMatrixCol () {
+	int i;
+	for (i = 0; i < COL; i++)
+		write_one_col (i, 0);
+}
+
 /*This will write values startin from num to the col specified in the global MATRIX.
  * num will increment each iteration to avoid compiler optimizations.
  *
@@ -80,32 +155,4 @@ void write_one_col (int col, int num){
 		MATRIX[i][col] = num++; // num++ to avoid compiler optimization (as neccessary from the project description). I hope simply doing this works.
 	}
 	return;
-}
-
-
-/* This creates a copy of the desired row from the global MATRIX and returns a pointer to it.
- *
- *@param int row - the desired row to read
- *@return char * to the recreated row
- */
-char * read_one_row (int row){
-	char  *read = malloc(COL); //chars are 1 byte big, so doing sizeof(char) * COL is redundant and unneccessary.
-	memcpy(read, MATRIX[row], COL); //nice build in function that will copy COL bytes from MATRIX to read, rather than iterating through it ourselves
-	return read;
-}
-
-
-/*This creates a copy of the desired col from the global MATRIX and returns a pointer to it.
- *
- *
- *@param int col - the deisred col to read
- *@return char * to the recreated col
- */
-char * read_one_col (int col){
-	char *read = malloc(ROW);
-	int i;
-	for (i = 0; i < ROW; i++){ //must iterate through it ourselves because memcpy function doesn't work like that since 2D arrays are just one big 1D array
-		read[i] = MATRIX[i][col]; 
-	}
-	return read;
 }
